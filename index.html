@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>17Personalities - 청소년 성격 변화 추적 프로그램</title>
+    <style>
+        :root {
+            --primary-color: #166088; /* 오늘의 결과 (진한 청록색) */
+            --past-color: rgba(74, 111, 165, 0.25); /* 직전 결과 (연한 반투명 블루) */
+            --past-stroke: rgba(74, 111, 165, 0.65);
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 30px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 26px;
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+
+        .input-style {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-style:focus {
+            border-color: var(--primary-color);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background-color: #0f4c6e;
+        }
+
+        .switch-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .switch-link span {
+            color: var(--primary-color);
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .user-status {
+            background: #e0f2fe;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #0369a1;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #0284c7;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            height: 8px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .question-box h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #1e293b;
+            word-break: keep-all;
+        }
+
+        .options-list {
+            list-style: none;
+        }
+
+        .option-item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .option-item:hover {
+            background: #edf2f7;
+            border-color: var(--primary-color);
+        }
+
+        .result-text-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 14px;
+            margin: 15px 0;
+            border-left: 5px solid var(--primary-color);
+            line-height: 1.7;
+            word-break: keep-all;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 12px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .chart-container {
+            position: relative;
+            margin: 10px auto;
+            width: 100%;
+            height: 200px;
+        }
+
+        .warning-box {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            color: #c53030;
+            font-size: 14px;
+        }
+
+        .warning-box h4 {
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="screen-login" class="screen active">
+        <h1>17Personalities</h1>
+        <p class="subtitle">나의 성격 변화 추적 시스템</p>
+        <div style="text-align: center; font-size: 45px; margin-bottom: 15px;">🔐</div>
+        
+        <div class="input-group">
+            <label for="login-id">학생 이름 또는 아이디</label>
+            <input type="text" id="login-id" class="input-style" placeholder="아이디를 입력하세요">
+        </div>
+        <div class="input-group">
+            <label for="login-pw">비밀번호</label>
+            <input type="password" id="login-pw" class="input-style" placeholder="비밀번호를 입력하세요">
+        </div>
+        <button class="btn" onclick="processLogin()">로그인 후 시작하기</button>
+        <div class="switch-link">처음 방문하셨나요? <span onclick="switchScreen('screen-register')">회원가입하기</span></div>
+    </div>
+
+    <div id="screen-register" class="screen">
+        <h1>회원가입</h1>
+        <p class="subtitle">성격 변화 추적을 위한 계정 생성</p>
+        <div style="text-align: center; font-size: 45px; margin-bottom: 15px;">📝</div>
+        
+        <div class="input-group">
+            <label for="reg-id">학생 이름 또는 사용할 아이디</label>
+            <input type="text" id="reg-id" class="input-style" placeholder="아이디를 입력하세요 (예: b21029)">
+        </div>
+        <div class="input-group">
+            <label for="reg-pw">비밀번호</label>
+            <input type="password" id="reg-pw" class="input-style" placeholder="비밀번호를 입력하세요">
+        </div>
+        <button class="btn" onclick="processRegister()">가입 완료하기</button>
+        <div class="switch-link">이미 계정이 있으신가요? <span onclick="switchScreen('screen-login')">로그인하기</span></div>
+    </div>
+
+    <div id="screen-home" class="screen">
+        <div class="user-status">
+            <span id="user-welcome">안녕하세요!</span>
+            <button class="logout-btn" onclick="processLogout()">로그아웃</button>
+        </div>
+        <h1>17Personalities</h1>
+        <p class="subtitle">나의 주기적인 성격 변화를 알아보세요.</p>
+        <div style="text-align: center; font-size: 50px; margin: 15px 0;">📊</div>
+        <p id="history-info" style="text-align: center; font-size: 14px; color: #4a5568; margin-bottom: 20px; line-height: 1.6;"></p>
+        <button class="btn" onclick="startTest()">검사 시작하기</button>
+    </div>
+
+    <div id="screen-quiz" class="screen">
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div class="question-box">
+            <h2 id="question-text">질문을 불러오는 중입니다...</h2>
+            <ul class="options-list" id="options-list"></ul>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <h1>검사 분석 리포트</h1>
+        <p class="subtitle" style="margin-bottom: 15px;">나의 성격 분포 및 변화량</p>
+        
+        <div id="result-text-area" class="result-text-box"></div>
+
+        <div class="chart-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--primary-color);"></div>
+                <span>오늘의 결과 (진하게)</span>
+            </div>
+            <div class="legend-item" id="legend-past-item" style="display: none;">
+                <div class="legend-color" style="background-color: var(--past-color); border: 1px dashed var(--past-stroke);"></div>
+                <span>직전 결과 (연하게)</span>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="mbtiChart" width="440" height="200"></canvas>
+        </div>
+
+        <div id="solution-container"></div>
+
+        <button class="btn" onclick="goToHome()">대시보드로 돌아가기</button>
+    </div>
+</div>
+
+<script>
+    // 요구 분석서 내 아키텍트(Architect) 페이지에 명시된 상황 및 4개 선지 그대로 세팅
+    const questions = [
+        {
+            q: "Q1. 연휴 동안 푹 쉬고 공부를 다시 시작하려고 한다. 내가 가장 먼저 할 일은?",
+            options: [
+                { text: "일단 앉아서 눈 앞에 보이는 것을 시작한다.", score: { P: 2 } },
+                { text: "마감 기한이 가장 임박한 것 순서대로 계획을 세우고 각각 시간이 얼마나 걸릴지 예상해서 쓴 뒤 시작한다.", score: { J: 2 } },
+                { text: "머릿속으로 해야할 일을 생각한 뒤 시작한다.", score: { P: 1, J: 1 } },
+                { text: "더 쉰다.", score: { P: 2 } }
+            ]
+        },
+        {
+            q: "Q2. 조별 프로젝트 과제 수행 중 한 명이 소통을 끊고 잠수를 탔을 때 나의 대처는?",
+            options: [
+                { text: "팀원의 개인 사정이 있는지 먼저 걱정하며 안부를 묻거나 챙겨준다.", score: { F: 2 } },
+                { text: "공평한 역할 분배와 규칙 엄수를 위해 즉시 선생님이나 교수님께 알린다.", score: { T: 2 } },
+                { text: "갈등을 빚기 싫어서 그냥 내가 도맡아서 조용히 처리한다.", score: { F: 1 } },
+                { text: "공적인 대화방에 현재 진행 상황 팩트를 요약하여 답변을 재촉한다.", score: { T: 1 } }
+            ]
+        },
+        {
+            q: "Q3. 주말에 오랜만에 약속이 없는 온전한 개인 자유 시간이 주어졌을 때 나는?",
+            options: [
+                { text: "당장 친한 친구들에게 메신저를 보내 밖에서 만나 놀거나 맛있는 것을 먹는다.", score: { E: 2 } },
+                { text: "방 안에서 나가지 않고 조용히 스마트폰을 보거나 밀린 영상을 시청하며 혼자 충전한다.", score: { I: 2 } },
+                { text: "가족들과 거실에서 이야기를 나누거나 동네 가벼운 산책을 다녀온다.", score: { E: 1 } },
+                { text: "내 주변 공간을 정리 정돈하거나 평소 좋아하는 취미 생활에 몰두한다.", score: { I: 1 } }
+            ]
+        },
+        {
+            q: "Q4. 내년도 학교 축제에서 새롭고 참신한 부스 기획 아이디어를 내라고 할 때 내 머릿속은?",
+            options: [
+                { text: "이전 축제에서 성공 사례가 입증되었던 안전하고 구체적인 실행 방법 위주로 구상한다.", score: { S: 2 } },
+                { text: "한 번도 해본 적 없는 파격적이고 기발한 개념의 가상현실이나 이색 테마를 상상한다.", score: { N: 2 } },
+                { text: "필요한 물품 단가, 예산, 동선 등 현실적인 실현 조건의 수치부터 계산해 본다.", score: { S: 1 } },
+                { text: "하나의 아이디어에서 생각이 꼬리를 물고 무궁무진하게 판타지처럼 뻗어나간다.", score: { N: 1 } }
+            ]
+        }
+    ];
+
+    let loggedInUser = "";
+    let currentIdx = 0;
+    let currentScores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+
+    // 페이지 로드 시 기존 세션 유지 유무 검사
+    window.onload = function() {
+        const keepUser = localStorage.getItem('active_session_user');
+        if (keepUser) {
+            loggedInUser = keepUser;
+            goToHome();
+        }
+    };
+
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    // 회원가입 프로세스
+    function processRegister() {
+        const id = document.getElementById('reg-id').value.trim();
+        const pw = document.getElementById('reg-pw').value.trim();
+
+        if (!id || !pw) {
+            alert("아이디와 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
+        // 학번/아이디 형식 입력 시 특수문자나 인코딩 문제를 방지하기 위해 안전한 키 변환 적용
+        const safeUserKey = "user_auth_" + encodeURIComponent(id);
+        if (localStorage.getItem(safeUserKey)) {
+            alert("이미 존재하는 회원 아이디입니다.");
+            return;
+        }
+
+        const accountData = { id: id, pw: pw };
+        localStorage.setItem(safeUserKey, JSON.stringify(accountData));
+        alert("회원가입이 완료되었습니다! 로그인을 진행해주세요.");
+        
+        document.getElementById('reg-id').value = "";
+        document.getElementById('reg-pw').value = "";
+        switchScreen('screen-login');
+    }
+
+    // [버그 해결] 로그인 및 예외 처리 로직
+    function processLogin() {
+        const id = document.getElementById('login-id').value.trim();
+        const pw = document.getElementById('login-pw').value.trim();
+
+        if (!id || !pw) {
+            alert("아이디와 비밀번호를 입력해주세요.");
+            return;
+        }
+
+        const safeUserKey = "user_auth_" + encodeURIComponent(id);
+        const accountRaw = localStorage.getItem(safeUserKey);
+
+        if (!accountRaw) {
+            alert("등록되지 않은 아이디입니다. 회원가입을 먼저 진행해주세요.");
+            return;
+        }
+
+        try {
+            const account = JSON.parse(accountRaw);
+            if (account.pw !== pw) {
+                alert("비밀번호가 일치하지 않습니다.");
+                return;
+            }
+
+            // 인증 성공 시 전역 변수 설정 및 localStorage 안전 매핑
+            loggedInUser = id;
+            localStorage.setItem('active_session_user', id);
+            goToHome();
+        } catch (e) {
+            alert("로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+        }
+    }
+
+    function processLogout() {
+        localStorage.removeItem('active_session_user');
+        loggedInUser = "";
+        document.getElementById('login-id').value = "";
+        document.getElementById('login-pw').value = "";
+        switchScreen('screen-login');
+    }
+
+    function goToHome() {
+        switchScreen('screen-home');
+        document.getElementById('user-welcome').innerText = `👋 ${loggedInUser} 학생`;
+        
+        const history = getHistoryData();
+        const historyInfo = document.getElementById('history-info');
+        
+        if (history.length > 0) {
+            const lastTest = history[history.length - 1];
+            historyInfo.innerHTML = `현재까지 누적 검사 횟수: <span style="color:var(--primary-color); font-weight:bold;">${history.length}회</span><br>` +
+                                    `<span style="font-size:12px; color:#475569;">최근 검사 결과: <b>${lastTest.mbti}</b> (${lastTest.timestamp})</span>`;
+        } else {
+            historyInfo.innerText = "아직 검사 이력이 없습니다. 나의 주기적인 성격 변화 추적을 위해 첫 검사를 시작해보세요!";
+        }
+    }
+
+    function getHistoryData() {
+        const safeRecordKey = "mbti_records_" + encodeURIComponent(loggedInUser);
+        const raw = localStorage.getItem(safeRecordKey);
+        return raw ? JSON.parse(raw) : [];
+    }
+
+    function startTest() {
+        switchScreen('screen-quiz');
+        currentIdx = 0;
+        currentScores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+        displayQuestion();
+    }
+
+    function displayQuestion() {
+        const progress = (currentIdx / questions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+
+        if (currentIdx >= questions.length) {
+            calculateAndRenderResults();
+            return;
+        }
+
+        const currentQ = questions[currentIdx];
+        document.getElementById('question-text').innerText = currentQ.q;
+        
+        const listContainer = document.getElementById('options-list');
+        listContainer.innerHTML = '';
+
+        currentQ.options.forEach(opt => {
+            const li = document.createElement('li');
+            li.className = 'option-item';
+            li.innerText = opt.text;
+            li.onclick = function() {
+                for (let key in opt.score) {
+                    currentScores[key] += opt.score[key];
+                }
+                currentIdx++;
+                displayQuestion();
+            };
+            listContainer.appendChild(li);
+        });
+    }
+
+    function calculateAndRenderResults() {
+        switchScreen('screen-result');
+        document.getElementById('progress-bar').style.width = '100%';
+
+        const calcRatio = (v1, v2) => {
+            const sum = v1 + v2;
+            if (sum === 0) return 50;
+            return Math.round((v1 / sum) * 100);
+        };
+
+        // 데이터 스케일 밸런싱 비율 산출 (질문 수에 맞춘 보정 가중치 포함)
+        const eRatio = calcRatio(currentScores.E + 2, currentScores.I + 2);
+        const sRatio = calcRatio(currentScores.S + 1, currentScores.N + 3);
+        const tRatio = calcRatio(currentScores.T + 2, currentScores.F + 1);
+        const jRatio = calcRatio(currentScores.J + 3, currentScores.P + 1);
+
+        const currentMbti = (eRatio >= 50 ? 'E':'I') + 
+                            (sRatio >= 50 ? 'S':'N') + 
+                            (tRatio >= 50 ? 'T':'F') + 
+                            (jRatio >= 50 ? 'J':'P');
+
+        const testRecord = {
+            timestamp: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            mbti: currentMbti,
+            metrics: { E: eRatio, S: sRatio, T: tRatio, J: jRatio }
+        };
+
+        const history = getHistoryData();
+        const pastRecord = history.length > 0 ? history[history.length - 1] : null;
+
+        // 신규 결과 누적 저장
+        history.push(testRecord);
+        const safeRecordKey = "mbti_records_" + encodeURIComponent(loggedInUser);
+        localStorage.setItem(safeRecordKey, JSON.stringify(history));
+
+        // [요구 분석서 서식 준수] 당신의 mbti는 XXXX이고, 지난 검사에 비해 ... 출력 시스템 구현
+        const textContainer = document.getElementById('result-text-area');
+        const legendPastItem = document.getElementById('legend-past-item');
+
+        if (pastRecord) {
+            legendPastItem.style.display = 'flex';
+
+            const dE = testRecord.metrics.E - pastRecord.metrics.E;
+            const dS = testRecord.metrics.S - pastRecord.metrics.S;
+            const dT = testRecord.metrics.T - pastRecord.metrics.T;
+            const dJ = testRecord.metrics.J - pastRecord.metrics.J;
+
+            const getDiffStr = (val, upChar, downChar) => {
+                if (val > 0) return `${upChar}(${val}% 증가)`;
+                if (val < 0) return `${downChar}(${Math.abs(val)}% 감소)`;
+                return `${upChar}/형태유지(0%)`;
+            };
+
+            const eStr = getDiffStr(dE, 'E', 'I');
+            const sStr = getDiffStr(dS, 'S', 'N');
+            const tStr = getDiffStr(dT, 'T', 'F');
+            const jStr = getDiffStr(dJ, 'J', 'P');
+
+            textContainer.innerHTML = `당신의 mbti는 <b style="color:var(--primary-color); font-size:16px;">${currentMbti}</b>이고, 지난 검사에 비해 <b>${eStr}</b>, <b>${sStr}</b>, <b>${tStr}</b>, <b>${jStr}</b> 하였습니다.`;
+        } else {
+            legendPastItem.style.display = 'none';
+            textContainer.innerHTML = `당신의 mbti는 <b style="color:var(--primary-color); font-size:16px;">${currentMbti}</b>입니다.<br><span style="font-size:12px; color:#64748b;">(첫 번째 검사입니다. 다음 주기 검사부터 이전 결과와의 수치 변화율이 대조 분석됩니다.)</span>`;
+        }
+
+        // [요구 분석서 매칭] 90% 이상 극단 수치 완화 조언 출력 조건 시스템
+        let solutionHTML = '';
+        if (jRatio >= 90) {
+            solutionHTML += createGuideBox(currentMbti, 'J', '현재 J수치가 90% 이상으로, 판단에 의지하는 상태로 보입니다. 너무 계획에 의존하기 보다는, 유동적으로 생활하는 것을 추천합니다.');
+        }
+        if (calcRatio(currentScores.F + 1, currentScores.T + 2) >= 90) { // F의 비율이 90% 이상일 때
+            solutionHTML += createGuideBox(currentMbti, 'F', '현재 F 수치가 90% 이상으로, 감정적인 상태로 보입니다. 감정을 조절하기 위해 명상을 추천합니다.');
+        }
+
+        document.getElementById('solution-container').innerHTML = solutionHTML;
+
+        // [요구 사항 반영] 동일 막대 내부 오늘 결과(진하게) + 직전 결과(연하게) 중첩 드로잉
+        renderDualLayerChart(testRecord.metrics, pastRecord ? pastRecord.metrics : null);
+    }
+
+    function createGuideBox(mbti, type, text) {
+        return `
+            <div class="warning-box">
+                <h4>⚠️ 성격 극단성 완화 조언 가이드</h4>
+                <p>${text}</p>
+            </div>
+        `;
+    }
+
+    // 단일 막대 그래프 안에 연하고 진한 그래픽 요소를 중첩하는 Canvas 렌더링 시스템
+    function renderDualLayerChart(current, past) {
+        const canvas = document.getElementById('mbtiChart');
+        if (!canvas.getContext) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const config = [
+            { left: 'E', right: 'I', key: 'E' },
+            { left: 'S', right: 'N', key: 'S' },
+            { left: 'T', right: 'F', key: 'T' },
+            { left: 'J', right: 'P', key: 'J' }
+        ];
+
+        const startY = 25;
+        const gapY = 44;
+        const totalBarW = 250;
+        const barH = 18;
+        const startX = 95;
+
+        config.forEach((item, idx) => {
+            const cY = startY + (idx * gapY);
+            const curVal = current[item.key];
+
+            // 1. 좌우측 인덱스 폰트 렌더링
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${item.left} (${curVal}%)`, startX - 12, cY + 14);
+
+            ctx.textAlign = 'left';
+            ctx.fillText(`(${100 - curVal}%) ${item.right}`, startX + totalBarW + 12, cY + 14);
+
+            // 2. 전체 레일 회색 트랙 배경 바
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.roundRect(startX, cY, totalBarW, barH, 5);
+            ctx.fill();
+
+            // 3. [직전 결과 - 연하게] (과거 데이터가 있으면 베이스 레벨 위에 반투명으로 먼저 드로잉)
+            if (past) {
+                const pastVal = past[item.key];
+                const pastW = (pastVal / 100) * totalBarW;
+                
+                ctx.fillStyle = 'rgba(74, 111, 165, 0.25)'; // 연하게 채우기
+                ctx.beginPath();
+                ctx.roundRect(startX, cY, pastW, barH, 5);
+                ctx.fill();
+
+                // 과거 지표 경계 식별을 위한 점선 테두리 라인 오버레이
+                ctx.strokeStyle = 'rgba(74, 111, 165, 0.65)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]); // 점선 해제
+            }
+
+            // 4. [오늘의 결과 - 진하게] (중앙 슬림 레이아웃으로 중첩하여 비교 직관성 확보)
+            const curW = (curVal / 100) * totalBarW;
+            ctx.fillStyle = '#166088'; // 진한 청록색 고정
+            ctx.beginPath();
+            
+            if (past) {
+                // 직전 바의 흔적이 위아래 테두리에 보이도록 감싸 안쪽 중앙에 진하게 렌더링
+                ctx.roundRect(startX, cY + 3, curW, barH - 6, 4);
+            } else {
+                ctx.roundRect(startX, cY, curW, barH, 5);
+            }
+            ctx.fill();
+        });
+    }
+</script>
+
+</body>
+</html>
